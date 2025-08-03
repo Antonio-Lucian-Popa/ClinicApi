@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: CLINIC/master.yaml
+      relativeToChangelogFile: true
