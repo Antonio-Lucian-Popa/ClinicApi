@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ro" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Invitație în platforma clinică</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f7fa;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        h2 {
+            color: #4a90e2;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background-color: #4a90e2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Ai fost invitat să te alături unei clinici!</h2>
+
+    <p>Bună,</p>
+
+    <p>Ai primit o invitație pentru a te alătura clinicii <strong th:text="${clinic}">[Nume Clinică]</strong> ca <strong th:text="${role}">[Rol]</strong>.</p>
+
+    <p>Apasă pe butonul de mai jos pentru a accepta invitația și a-ți crea contul:</p>
+
+    <a class="btn" th:href="${acceptLink}" target="_blank">Acceptă invitația</a>
+
+    <p>Dacă nu ai solicitat această invitație, poți ignora acest mesaj.</p>
+
+    <div class="footer">
+        Acest mesaj a fost trimis automat de platforma ClinicApp.
+    </div>
+</div>
+</body>
+</html>
