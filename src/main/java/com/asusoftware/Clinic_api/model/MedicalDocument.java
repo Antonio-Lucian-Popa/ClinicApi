@@ -15,18 +15,21 @@ import java.util.*;
 @AllArgsConstructor
 @Builder
 public class MedicalDocument {
+
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     @ManyToOne
+    @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
-    @Column(nullable = false)
-    private UUID uploadedBy;
+    @ManyToOne
+    @JoinColumn(name = "uploaded_by", nullable = false)
+    private User uploadedBy;
 
     private String documentType;
     private String fileUrl;
     private String notes;
-    private LocalDateTime uploadedAt = LocalDateTime.now();
+    private LocalDateTime uploadedAt;
 }

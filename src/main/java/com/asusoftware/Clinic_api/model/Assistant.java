@@ -16,15 +16,13 @@ import java.util.*;
 @Builder
 public class Assistant {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    private String firstName;
-    private String lastName;
     private boolean active = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 }

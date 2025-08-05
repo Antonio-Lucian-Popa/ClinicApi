@@ -16,10 +16,11 @@ import java.util.*;
 @Builder
 public class PatientAllergy {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     @ManyToOne
+    @JoinColumn(name = "patient_id")
     private Patient patient;
 
     private String allergies;

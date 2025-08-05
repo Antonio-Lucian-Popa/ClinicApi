@@ -16,19 +16,24 @@ import java.util.*;
 @Builder
 public class TimeOffRequest {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     private String role;
     private LocalDate startDate;
     private LocalDate endDate;
-    private UUID approvedBy;
+
+    @ManyToOne
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
+
     private LocalDateTime approvedAt;
     private String reason;
     private String status;
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

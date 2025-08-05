@@ -16,22 +16,26 @@ import java.util.*;
 @Builder
 public class MaterialUsage {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     @ManyToOne
+    @JoinColumn(name = "doctor_id")
     private Doctor doctor;
 
     @ManyToOne
+    @JoinColumn(name = "assistant_id")
     private Assistant assistant;
 
     @ManyToOne
+    @JoinColumn(name = "appointment_id")
     private Appointment appointment;
 
     @ManyToOne
+    @JoinColumn(name = "material_id", nullable = false)
     private Material material;
 
-    private Double quantity;
-    private LocalDateTime usageDate = LocalDateTime.now();
+    private double quantity;
+    private LocalDateTime usageDate;
     private String notes;
 }

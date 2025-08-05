@@ -16,7 +16,7 @@ import java.util.*;
 @Builder
 public class Patient {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     private String firstName;
@@ -26,15 +26,17 @@ public class Patient {
     private LocalDate dateOfBirth;
     private String gender;
     private String cnp;
+
+    @ManyToOne
+    @JoinColumn(name = "cabinet_id", nullable = false)
+    private Cabinet cabinet;
+
+    @ManyToOne
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private String address;
     private String emergencyContact;
-
-    @Column(nullable = false)
-    private UUID tenantId;
-
-    @Column(nullable = false)
-    private UUID createdBy;
-
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private LocalDateTime updatedAt = LocalDateTime.now();
 }

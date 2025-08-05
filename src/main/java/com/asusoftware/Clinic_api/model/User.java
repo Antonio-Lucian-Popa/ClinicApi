@@ -16,8 +16,7 @@ import java.util.*;
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @Column(updatable = false, nullable = false)
+    @GeneratedValue
     private UUID id;
 
     @Column(nullable = false, unique = true)
@@ -32,7 +31,8 @@ public class User {
     private String firstName;
     private String lastName;
     private boolean enabled = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDateTime createdAt;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

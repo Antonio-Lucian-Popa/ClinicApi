@@ -14,7 +14,7 @@ import java.util.*;
 @AllArgsConstructor
 public class Role {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     @Column(nullable = false, unique = true)

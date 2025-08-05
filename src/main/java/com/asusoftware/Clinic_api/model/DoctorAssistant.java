@@ -16,12 +16,14 @@ import java.util.*;
 @Builder
 public class DoctorAssistant {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     @ManyToOne
+    @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
     @ManyToOne
+    @JoinColumn(name = "assistant_id", nullable = false)
     private Assistant assistant;
 }

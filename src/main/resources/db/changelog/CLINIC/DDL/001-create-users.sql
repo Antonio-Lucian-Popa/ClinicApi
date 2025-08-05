@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- === USERS, ROLES, USER_ROLES ===
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS roles (
+CREATE TABLE roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS user_roles (
+CREATE TABLE user_roles (
     user_id UUID NOT NULL,
     role_id UUID NOT NULL,
     PRIMARY KEY (user_id, role_id),
@@ -29,16 +29,15 @@ CREATE TABLE IF NOT EXISTS user_roles (
 -- Roluri implicite
 INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'USER');
 INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'ADMIN');
+INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'OWNER');
 INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'DOCTOR');
 INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'ASSISTANT');
-INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'OWNER');
+INSERT INTO roles (id, name) VALUES (uuid_generate_v4(), 'RECEPTIONIST');
 
 -- === OWNERS ===
 CREATE TABLE owners (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -58,23 +57,27 @@ CREATE TABLE cabinets (
 -- === DOCTORS ===
 CREATE TABLE doctors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
     cabinet_id UUID NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
     specialization VARCHAR(100),
     room_label VARCHAR(50),
     active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, cabinet_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- === ASSISTANTS ===
 CREATE TABLE assistants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- === RECEPTIONISTS ===
+CREATE TABLE receptionists (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    cabinet_id UUID NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -91,7 +94,7 @@ CREATE TABLE doctor_assistant (
 CREATE TABLE invitations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(150) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('DOCTOR', 'ASSISTANT')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('DOCTOR', 'ASSISTANT', 'RECEPTIONIST')),
     cabinet_id UUID REFERENCES cabinets(id) ON DELETE CASCADE,
     doctor_id UUID REFERENCES doctors(id) ON DELETE CASCADE,
     invited_by UUID NOT NULL REFERENCES users(id),
@@ -110,7 +113,7 @@ CREATE TABLE patients (
     date_of_birth DATE,
     gender VARCHAR(10),
     cnp VARCHAR(20),
-    tenant_id UUID NOT NULL, -- = cabinet.owner_id
+    cabinet_id UUID NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
     created_by UUID NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -149,9 +152,9 @@ CREATE TABLE materials (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     unit VARCHAR(20),
-    tenant_id UUID NOT NULL,
+    cabinet_id UUID NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, name)
+    UNIQUE(cabinet_id, name)
 );
 
 -- === MATERIAL USAGES ===
@@ -190,4 +193,14 @@ CREATE TABLE medical_documents (
     file_url TEXT NOT NULL,
     notes TEXT,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- === CLINIC HISTORY ===
+CREATE TABLE clinic_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    cabinet_id UUID NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
+    action VARCHAR(255) NOT NULL,
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

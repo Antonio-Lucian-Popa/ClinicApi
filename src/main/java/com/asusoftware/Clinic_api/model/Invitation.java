@@ -16,20 +16,27 @@ import java.util.*;
 @Builder
 public class Invitation {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     private String email;
+
+    @Column(nullable = false)
     private String role;
 
     @ManyToOne
+    @JoinColumn(name = "cabinet_id")
     private Cabinet cabinet;
 
     @ManyToOne
+    @JoinColumn(name = "doctor_id")
     private Doctor doctor;
 
-    private UUID invitedBy;
+    @ManyToOne
+    @JoinColumn(name = "invited_by", nullable = false)
+    private User invitedBy;
+
     private String status;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
     private LocalDateTime acceptedAt;
 }

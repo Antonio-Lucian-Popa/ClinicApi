@@ -16,14 +16,15 @@ import java.util.*;
 @Builder
 public class Material {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
     private String name;
     private String unit;
 
-    @Column(nullable = false)
-    private UUID tenantId;
+    @ManyToOne
+    @JoinColumn(name = "cabinet_id")
+    private Cabinet cabinet;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 }

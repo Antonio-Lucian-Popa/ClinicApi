@@ -1,20 +1,11 @@
 package com.asusoftware.Clinic_api.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-
 @Entity
-@Table(name = "owners")
-@Getter
-@Setter
+@Table(name = "receptionists")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Owner {
+public class Receptionist {
     @Id
     @GeneratedValue
     private UUID id;
@@ -23,6 +14,10 @@ public class Owner {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    private String phone;
+    @ManyToOne
+    @JoinColumn(name = "cabinet_id", nullable = false)
+    private Cabinet cabinet;
+
+    private boolean active = true;
     private LocalDateTime createdAt;
 }

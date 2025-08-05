@@ -16,22 +16,19 @@ import java.util.*;
 @Builder
 public class Doctor {
     @Id
-    @GeneratedValue(generator = "UUID")
+    @GeneratedValue
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    private String firstName;
-    private String lastName;
+    @ManyToOne
+    @JoinColumn(name = "cabinet_id", nullable = false)
+    private Cabinet cabinet;
+
     private String specialization;
     private String roomLabel;
     private boolean active = true;
-
-    @ManyToOne
-    @JoinColumn(name = "cabinet_id")
-    private Cabinet cabinet;
-
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 }
