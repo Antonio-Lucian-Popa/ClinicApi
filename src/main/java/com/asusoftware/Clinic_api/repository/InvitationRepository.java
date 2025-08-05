@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
     Optional<Invitation> findByEmailAndRole(String email, String role);
     List<Invitation> findByCabinetId(UUID cabinetId);
+    Optional<Invitation> findByEmail(String email);
 }

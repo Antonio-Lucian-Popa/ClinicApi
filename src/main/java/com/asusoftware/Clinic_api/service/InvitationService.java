@@ -1,6 +1,7 @@
 package com.asusoftware.Clinic_api.service;
 
 import com.asusoftware.Clinic_api.model.*;
+import com.asusoftware.Clinic_api.model.dto.InviteRequest;
 import com.asusoftware.Clinic_api.repository.*;
 import com.asusoftware.Clinic_api.security.JwtService;
 import jakarta.transaction.Transactional;
