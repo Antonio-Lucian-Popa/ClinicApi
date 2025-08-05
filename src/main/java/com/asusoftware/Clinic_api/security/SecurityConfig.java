@@ -1,5 +1,6 @@
 package com.asusoftware.Clinic_api.security;
 
+import com.asusoftware.Clinic_api.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
