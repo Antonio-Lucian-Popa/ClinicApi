@@ -55,6 +55,9 @@ jwt:
   access-token-expiration-minutes: 15
   refresh-token-expiration-days: 7
 
+  invitation:
+      expiration: PT24H
+
 google:
   client-id: ${GOOGLE_CLIENT_ID}
 

@@ -1,5 +1,7 @@
 package com.asusoftware.Clinic_api.security;
 
+import com.asusoftware.Clinic_api.model.Invitation;
+import com.asusoftware.Clinic_api.model.Role;
 import com.asusoftware.Clinic_api.model.User;
 import com.asusoftware.Clinic_api.repository.UserRepository;
 import io.jsonwebtoken.*;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -27,6 +30,10 @@ public class JwtService {
 
     @Value("${jwt.refresh-token-expiration-days}")
     private int refreshTokenDays;
+
+    @Value("${jwt.invitation.expiration}")
+    private Duration invitationTokenExpiration;
+
 
     private final UserRepository userRepository;
 
@@ -125,9 +132,37 @@ public class JwtService {
         }
     }
 
+    public String generateInvitationToken(Invitation invitation) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "INVITATION");
+        claims.put("email", invitation.getEmail());
+        claims.put("role", invitation.getRole());
+        claims.put("cabinetId", invitation.getCabinet().getId());
+        if (invitation.getDoctor() != null) {
+            claims.put("doctorId", invitation.getDoctor().getId().toString());
+        }
+
+        return buildToken(claims, invitation.getEmail(), invitationTokenExpiration); // Expirare 24h sau cât vrei
+    }
+
+
     private boolean isTokenExpired(String token) {
         Date expiration = extractAllClaims(token).getExpiration();
         return expiration.before(new Date());
     }
+
+    private String buildToken(Map<String, Object> extraClaims, String subject, Duration expiration) {
+        Instant now = Instant.now();
+        Instant expiry = now.plus(expiration);
+
+        return Jwts.builder()
+                .setClaims(extraClaims)
+                .setSubject(subject)
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(expiry))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
 
 }
