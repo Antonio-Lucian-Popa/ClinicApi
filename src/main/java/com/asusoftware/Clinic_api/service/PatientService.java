@@ -12,6 +12,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -92,6 +93,10 @@ public class PatientService {
         patient.setUpdatedAt(LocalDateTime.now());
         User updater = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        /*if (!patient.getCabinet().getOwner().getUser().getId().equals(updater.getId())) {
+            throw new AccessDeniedException("Nu ai dreptul să modifici acest pacient.");
+        }*/
         patient.setCreatedBy(updater);
 
         patientRepository.save(patient);
