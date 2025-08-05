@@ -7,6 +7,8 @@ import com.asusoftware.Clinic_api.security.JwtService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -33,7 +35,9 @@ public class InvitationService {
     /**
      * 1. Creează invitația
      */
-    public void sendInvitation(InviteRequest request, User invitedBy) {
+    public void sendInvitation(InviteRequest request, UserDetails userDetails) {
+        User invitedBy = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Utilizator deja înregistrat cu acest email.");
         }
