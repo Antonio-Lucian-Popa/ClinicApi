@@ -1,0 +1,263 @@
+package com.asusoftware.Clinic_api.service;
+
+import com.asusoftware.Clinic_api.model.Role;
+import com.asusoftware.Clinic_api.model.User;
+import com.asusoftware.Clinic_api.model.dto.*;
+import com.asusoftware.Clinic_api.repository.RoleRepository;
+import com.asusoftware.Clinic_api.repository.UserRepository;
+import com.asusoftware.Clinic_api.security.JwtService;
+import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final EmailService emailService;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
+    public AuthenticationResponse login(AuthenticationRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        return new AuthenticationResponse(accessToken, refreshToken);
+    }
+
+    public void register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email deja înregistrat.");
+        }
+
+        Role defaultRole = roleRepository.findByName(request.getRole())
+                .orElseThrow(() -> new RuntimeException("Rolul USER nu există în DB"));
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .username(request.getEmail())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .enabled(false)
+                .roles(Set.of(defaultRole))
+                .createdAt(LocalDateTime.from(new Date().toInstant()))
+                .build();
+
+        userRepository.save(user);
+
+        String activationToken = jwtService.generateActivationToken(user);
+        String activationLink = frontendUrl + "/activate?token=" + activationToken;
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("name", user.getFirstName());
+        model.put("activationLink", activationLink);
+
+        emailService.sendHtmlEmail(user.getEmail(), "Activare cont", "activation-email", model);
+
+    }
+
+    public void confirmAccount(String token) {
+        if (!jwtService.isValidToken(token)) {
+            throw new IllegalArgumentException("Token invalid sau expirat.");
+        }
+
+        Claims claims = jwtService.extractAllClaims(token);
+        UUID userId = UUID.fromString(claims.getSubject());
+        String type = (String) claims.get("type");
+
+        if (!"ACTIVATION".equals(type)) {
+            throw new IllegalArgumentException("Token invalid pentru activare.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (Boolean.TRUE.equals(user.isEnabled())) {
+            throw new IllegalStateException("Cont deja activat.");
+        }
+
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    public AuthenticationResponse refreshToken(RefreshTokenRequest request) {
+        if (!jwtService.isValidRefreshToken(request.getRefreshToken())) {
+            throw new RuntimeException("Token invalid");
+        }
+
+        UUID userId = jwtService.extractUserId(request.getRefreshToken());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String newAccessToken = jwtService.generateAccessToken(user);
+        return new AuthenticationResponse(newAccessToken, request.getRefreshToken());
+    }
+
+    public AuthenticationResponse loginWithGoogle(String idToken) {
+        GoogleUserPayload payload = validateGoogleToken(idToken);
+
+        Optional<User> optionalUser = userRepository.findByEmail(payload.getEmail());
+
+        User user = optionalUser.orElseGet(() -> {
+            Role role = roleRepository.findByName("USER")
+                    .orElseThrow(() -> new RuntimeException("Rolul USER lipsă"));
+
+            User newUser = User.builder()
+                    .email(payload.getEmail())
+                    .username(payload.getEmail())
+                    .firstName(payload.getGiven_name())
+                    .lastName(payload.getFamily_name())
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Parolă generată automat
+                    .enabled(true)
+                    .roles(Set.of(role))
+                    .createdAt(LocalDateTime.from(new Date().toInstant()))
+                    .build();
+
+            return userRepository.save(newUser);
+        });
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+        return new AuthenticationResponse(accessToken, refreshToken);
+    }
+
+    public GoogleUserPayload validateGoogleToken(String idToken) {
+        String googleApiUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        try {
+            ResponseEntity<GoogleUserPayload> response = restTemplate.getForEntity(
+                    googleApiUrl, GoogleUserPayload.class
+            );
+
+            GoogleUserPayload payload = response.getBody();
+
+            // Validare simplă (verifică că e pentru aplicația ta)
+            if (payload == null || !payload.getAud().equals(googleClientId)) {
+                throw new RuntimeException("Token invalid: audiență incorectă");
+            }
+
+            return payload;
+        } catch (HttpClientErrorException ex) {
+            throw new RuntimeException("Token invalid sau expirat", ex);
+        }
+    }
+
+    public void sendResetPasswordEmail(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            String token = jwtService.generateResetToken(user); // vei crea metoda asta
+            String link = frontendUrl + "/reset-password?token=" + token;
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("name", user.getFirstName());
+            model.put("resetLink", link);
+
+            emailService.sendHtmlEmail(user.getEmail(), "Resetare parolă", "reset-password-email", model);
+
+        }
+    }
+
+
+    public void resetPassword(String token, String newPassword) {
+        if (!jwtService.isValidToken(token)) {
+            throw new IllegalArgumentException("Token invalid sau expirat.");
+        }
+
+        Claims claims = jwtService.extractAllClaims(token);
+        String type = (String) claims.get("type");
+        if (!"RESET".equals(type)) {
+            throw new IllegalArgumentException("Token invalid pentru resetare parolă.");
+        }
+
+        UUID userId = UUID.fromString(claims.getSubject());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public void updateProfile(UserDetails userDetails, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!user.getEmail().equals(request.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Email deja folosit.");
+            }
+            user.setEmail(request.getEmail());
+            user.setUsername(request.getEmail());
+        }
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            Set<Role> newRoles = request.getRoles().stream()
+                    .map(roleName -> roleRepository.findByName(roleName)
+                            .orElseThrow(() -> new RuntimeException("Rolul " + roleName + " nu există")))
+                    .collect(Collectors.toSet());
+
+            user.setRoles(newRoles);
+        }
+
+        userRepository.save(user);
+    }
+
+    public UserResponse getProfile(UserDetails userDetails) {
+        System.out.println("Fetching profile for user ID: " + userDetails.getUsername());
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                .createdAt(Instant.from(user.getCreatedAt()))
+                .enabled(user.isEnabled())
+                .build();
+    }
+}
