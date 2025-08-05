@@ -1,8 +1,10 @@
 package com.asusoftware.Clinic_api.service;
 
+import com.asusoftware.Clinic_api.model.Owner;
 import com.asusoftware.Clinic_api.model.Role;
 import com.asusoftware.Clinic_api.model.User;
 import com.asusoftware.Clinic_api.model.dto.*;
+import com.asusoftware.Clinic_api.repository.OwnerRepository;
 import com.asusoftware.Clinic_api.repository.RoleRepository;
 import com.asusoftware.Clinic_api.repository.UserRepository;
 import com.asusoftware.Clinic_api.security.JwtService;
@@ -34,6 +36,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final OwnerRepository ownerRepository;
 
     @Value("${google.client-id}")
     private String googleClientId;
@@ -75,6 +78,16 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        // 👇 Dacă este OWNER, creăm automat și entitatea Owner
+        if ("OWNER".equalsIgnoreCase(request.getRole())) {
+            Owner owner = Owner.builder()
+                    .user(user)
+                    .phone(request.getPhoneNumber()) // Dacă ai `phone` în `RegisterRequest`
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            ownerRepository.save(owner);
+        }
 
         String activationToken = jwtService.generateActivationToken(user);
         String activationLink = frontendUrl + "/activate?token=" + activationToken;
