@@ -1,8 +1,12 @@
 package com.asusoftware.Clinic_api.service;
 
+import com.asusoftware.Clinic_api.model.User;
+import com.asusoftware.Clinic_api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 

@@ -1,5 +1,7 @@
 package com.asusoftware.Clinic_api.security;
 
+import com.asusoftware.Clinic_api.model.User;
+import com.asusoftware.Clinic_api.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;

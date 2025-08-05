@@ -1,5 +1,8 @@
 package com.asusoftware.Clinic_api.security;
 
+import com.asusoftware.Clinic_api.model.User;
+import com.asusoftware.Clinic_api.repository.UserRepository;
+import com.asusoftware.Clinic_api.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
