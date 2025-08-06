@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,5 +14,21 @@ import java.util.UUID;
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
     Page<Appointment> findByDoctorId(UUID doctorId, Pageable pageable);
     Page<Appointment> findByPatientId(UUID patientId, Pageable pageable);
+
+    long countByDoctorCabinetIdIn(List<UUID> cabinetIds);
+
+    long countByDoctorCabinetIdInAndStartTimeAfter(List<UUID> cabinetIds, LocalDateTime time);
+
+    long countByDoctorId(UUID doctorId);
+
+    long countByDoctorIdAndStartTimeAfter(UUID doctorId, LocalDateTime time);
+
+    long countDistinctPatientsByDoctorId(UUID doctorId);
+
+    List<Appointment> findTop10ByDoctorCabinetIdInOrderByStartTimeDesc(List<UUID> cabinetIds);
+
+    List<Appointment> findTop10ByDoctorIdOrderByStartTimeDesc(UUID doctorId);
+
+    List<Appointment> findTop10ByAssistantIdOrderByStartTimeDesc(UUID assistantId);
 
 }

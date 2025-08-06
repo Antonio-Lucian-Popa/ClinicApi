@@ -11,4 +11,9 @@ import java.util.UUID;
 public interface MaterialRepository extends JpaRepository<Material, UUID> {
     List<Material> findByCabinetId(UUID cabinetId);
     boolean existsByCabinetIdAndName(UUID cabinetId, String name);
+
+    long countByCabinetId(UUID cabinetId);
+
+    long countByCabinetIdIn(List<UUID> cabinetIds);
+
 }

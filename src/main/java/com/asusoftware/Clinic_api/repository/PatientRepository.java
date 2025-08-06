@@ -14,4 +14,6 @@ public interface PatientRepository extends JpaRepository<Patient, UUID> {
     List<Patient> findByCabinetId(UUID cabinetId);
     Page<Patient> findByCabinetId(UUID cabinetId, Pageable pageable);
 
+    long countByCabinetIdIn(List<UUID> cabinetIds);
+
 }
