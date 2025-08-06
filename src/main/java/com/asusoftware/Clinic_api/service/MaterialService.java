@@ -2,14 +2,17 @@ package com.asusoftware.Clinic_api.service;
 
 import com.asusoftware.Clinic_api.model.Cabinet;
 import com.asusoftware.Clinic_api.model.Material;
+import com.asusoftware.Clinic_api.model.User;
 import com.asusoftware.Clinic_api.model.dto.MaterialRequest;
 import com.asusoftware.Clinic_api.model.dto.MaterialResponse;
 import com.asusoftware.Clinic_api.repository.CabinetRepository;
 import com.asusoftware.Clinic_api.repository.MaterialRepository;
+import com.asusoftware.Clinic_api.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,8 +24,10 @@ public class MaterialService {
 
     private final MaterialRepository materialRepository;
     private final CabinetRepository cabinetRepository;
+    private final UserRepository userRepository;
+    private ClinicHistoryService clinicHistoryService;
 
-    public MaterialResponse createMaterial(MaterialRequest request) {
+    public MaterialResponse createMaterial(MaterialRequest request, UserDetails userDetails) {
         Cabinet cabinet = cabinetRepository.findById(request.getCabinetId())
                 .orElseThrow(() -> new EntityNotFoundException("Cabinetul nu a fost găsit"));
 
@@ -33,7 +38,19 @@ public class MaterialService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("Utilizatorul nu a fost găsit"));
+
+        // Record the creation action in the clinic history
+        clinicHistoryService.recordAction(
+                cabinet.getId(),
+                user.getId(), // Assuming no user is associated with material creation
+                "CREATE_MATERIAL",
+                "Material created: " + material.getName()
+        );
+
         materialRepository.save(material);
+
         return MaterialResponse.fromEntity(material);
     }
 

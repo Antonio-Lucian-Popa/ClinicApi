@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -20,8 +22,8 @@ public class MaterialController {
     private final MaterialService materialService;
 
     @PostMapping
-    public ResponseEntity<MaterialResponse> createMaterial(@Valid @RequestBody MaterialRequest request) {
-        return ResponseEntity.ok(materialService.createMaterial(request));
+    public ResponseEntity<MaterialResponse> createMaterial(@Valid @RequestBody MaterialRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(materialService.createMaterial(request, userDetails));
     }
 
     @GetMapping
