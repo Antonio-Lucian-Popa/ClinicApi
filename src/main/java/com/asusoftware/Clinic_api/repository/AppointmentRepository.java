@@ -31,4 +31,14 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
 
     List<Appointment> findTop10ByAssistantIdOrderByStartTimeDesc(UUID assistantId);
 
+    // AppointmentRepository
+    int countTodayAppointmentsByCabinetIds(List<UUID> cabinetIds, LocalDateTime start, LocalDateTime end);
+    int countTodayAppointmentsByDoctor(UUID doctorId, LocalDateTime start, LocalDateTime end);
+    int countTodayAppointmentsByAssistant(UUID assistantId, LocalDateTime start, LocalDateTime end);
+    int countByDoctorCabinetIdInAndStatus(List<UUID> cabinetIds, String status);
+
+    int countByDoctorIdAndStatus(UUID doctorId, String status);
+    int countByAssistantIdAndStatus(UUID assistantId, String status);
+
+
 }

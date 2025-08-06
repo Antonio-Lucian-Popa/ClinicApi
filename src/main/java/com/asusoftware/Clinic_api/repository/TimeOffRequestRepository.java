@@ -13,4 +13,7 @@ import java.util.UUID;
 public interface TimeOffRequestRepository extends JpaRepository<TimeOffRequest, UUID> {
     Page<TimeOffRequest> findByUserId(UUID userId, Pageable pageable);
 
+    List<TimeOffRequest> findByUserId(UUID userId);
+
+    int countByStatus(String status);
 }

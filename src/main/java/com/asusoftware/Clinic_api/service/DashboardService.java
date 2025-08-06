@@ -3,13 +3,17 @@ package com.asusoftware.Clinic_api.service;
 import com.asusoftware.Clinic_api.model.*;
 import com.asusoftware.Clinic_api.model.dto.AppointmentResponse;
 import com.asusoftware.Clinic_api.model.dto.DashboardResponse;
+import com.asusoftware.Clinic_api.model.dto.TimeOffRequestDto;
 import com.asusoftware.Clinic_api.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -27,62 +31,98 @@ public class DashboardService {
     private final PatientRepository patientRepository;
     private final AppointmentRepository appointmentRepository;
     private final MaterialRepository materialRepository;
+    private final MaterialUsageRepository materialUsageRepository;
     private final CabinetRepository cabinetRepository;
+    private final TimeOffRequestRepository timeOffRepository;
 
     public DashboardResponse getDashboard(UserDetails userDetails) {
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit."));
 
-        boolean isOwner = user.getRoles().stream()
+        Set<String> roles = user.getRoles().stream()
                 .map(Role::getName)
-                .anyMatch("OWNER"::equals);
+                .collect(Collectors.toSet());
 
-        boolean isDoctor = user.getRoles().stream()
-                .map(Role::getName)
-                .anyMatch("DOCTOR"::equals);
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1);
 
-        if (isOwner) {
+        if (roles.contains("OWNER")) {
             Owner owner = ownerRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new RuntimeException("Owner-ul nu a fost găsit."));
 
             List<Cabinet> cabinets = cabinetRepository.findByOwnerId(owner.getId());
+            List<UUID> cabinetIds = cabinets.stream().map(Cabinet::getId).toList();
 
-            List<UUID> cabinetIds = cabinets.stream()
-                    .map(Cabinet::getId)
-                    .toList();
+            int totalCabinets = cabinets.size();
+            int totalDoctors = doctorRepository.findByCabinet_OwnerId(owner.getId()).size();
+            int totalAssistants = assistantRepository.findAllByOwnerId(owner.getId()).size();
+            int totalPatients = (int) patientRepository.countByCabinetIdIn(cabinetIds);
 
-            long patients = patientRepository.countByCabinetIdIn(cabinetIds);
-            long appointments = appointmentRepository.countByDoctorCabinetIdIn(cabinetIds);
-            long upcoming = appointmentRepository.countByDoctorCabinetIdInAndStartTimeAfter(cabinetIds, LocalDateTime.now());
-            long materials = materialRepository.countByCabinetIdIn(cabinetIds);
+            int todayAppointments = appointmentRepository.countTodayAppointmentsByCabinetIds(cabinetIds, startOfDay, endOfDay);
+            int pendingAppointments = appointmentRepository.countByDoctorCabinetIdInAndStatus(cabinetIds, "PENDING");
+            int todayMaterialUsages = countTodayByCabinetIds(cabinetIds);
+            int timeOffRequests = timeOffRepository.countByStatus("PENDING");
 
             return DashboardResponse.builder()
-                    .totalPatients(patients)
-                    .totalAppointments(appointments)
-                    .upcomingAppointments(upcoming)
-                    .totalMaterials(materials)
+                    .totalCabinets(totalCabinets)
+                    .totalDoctors(totalDoctors)
+                    .totalAssistants(totalAssistants)
+                    .totalPatients(totalPatients)
+                    .todayAppointments(todayAppointments)
+                    .pendingAppointments(pendingAppointments)
+                    .todayMaterialUsages(todayMaterialUsages)
+                    .timeOffRequests(timeOffRequests)
+                    .revenueThisMonth(0) // încă neimplementat
                     .build();
         }
 
-        if (isDoctor) {
+        if (roles.contains("DOCTOR")) {
             Doctor doctor = doctorRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new RuntimeException("Doctorul nu a fost găsit."));
 
-            long patients = appointmentRepository.countDistinctPatientsByDoctorId(doctor.getId());
-            long appointments = appointmentRepository.countByDoctorId(doctor.getId());
-            long upcoming = appointmentRepository.countByDoctorIdAndStartTimeAfter(doctor.getId(), LocalDateTime.now());
-            long materials = materialRepository.countByCabinetId(doctor.getCabinet().getId());
+            int todayAppointments = appointmentRepository.countTodayAppointmentsByDoctor(doctor.getId(), startOfDay, endOfDay);
+            int pendingAppointments = appointmentRepository.countByDoctorIdAndStatus(doctor.getId(), "PENDING");
+            LocalDateTime start = LocalDate.now().atStartOfDay();
+            LocalDateTime end = start.plusDays(1);
+
+            int usagesToday = materialUsageRepository.countByDoctorIdAndUsedAtBetween(doctor.getId(), start, end);
+
+            int timeOffRequests = timeOffRepository.findByUserId(user.getId()).size();
 
             return DashboardResponse.builder()
-                    .totalPatients(patients)
-                    .totalAppointments(appointments)
-                    .upcomingAppointments(upcoming)
-                    .totalMaterials(materials)
+                    .todayAppointments(todayAppointments)
+                    .pendingAppointments(pendingAppointments)
+                    .todayMaterialUsages(usagesToday)
+                    .timeOffRequests(timeOffRequests)
+                    .revenueThisMonth(0)
                     .build();
         }
 
-        throw new RuntimeException("Rolul nu este acceptat pentru dashboard.");
+        if (roles.contains("ASSISTANT")) {
+            Assistant assistant = assistantRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Asistentul nu a fost găsit."));
+
+            int todayAppointments = appointmentRepository.countTodayAppointmentsByAssistant(assistant.getId(), startOfDay, endOfDay);
+            int pendingAppointments = appointmentRepository.countByAssistantIdAndStatus(assistant.getId(), "PENDING");
+            LocalDateTime start = LocalDate.now().atStartOfDay();
+            LocalDateTime end = start.plusDays(1);
+
+            int usagesToday = materialUsageRepository.countByAssistantIdAndUsedAtBetween(assistant.getId(), start, end);
+
+            int timeOffRequests = timeOffRepository.findByUserId(user.getId()).size();
+
+            return DashboardResponse.builder()
+                    .todayAppointments(todayAppointments)
+                    .pendingAppointments(pendingAppointments)
+                    .todayMaterialUsages(usagesToday)
+                    .timeOffRequests(timeOffRequests)
+                    .revenueThisMonth(0)
+                    .build();
+        }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
+
 
     public List<AppointmentResponse> getRecentAppointments(UserDetails userDetails) {
         User user = userRepository.findByUsername(userDetails.getUsername())
@@ -122,6 +162,13 @@ public class DashboardService {
         return appointments.stream()
                 .map(AppointmentResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+
+    public int countTodayByCabinetIds(List<UUID> cabinetIds) {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = start.plusDays(1);
+        return materialUsageRepository.countByCabinetIdInAndUsedAtBetween(cabinetIds, start, end);
     }
 
 
