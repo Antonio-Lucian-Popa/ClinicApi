@@ -30,7 +30,7 @@ public class DashboardController {
         return service.getDashboard(jwt);
     }
 
-    @PreAuthorize("hasAnyRole('OWNER', 'DOCTOR', 'ASSISTANT')")
+    @PreAuthorize("hasAnyRole('OWNER', 'DOCTOR', 'ASSISTANT', 'RECEPTIONIST')")
     @GetMapping("/recent-appointments")
     public List<AppointmentResponse> getRecentAppointments(@AuthenticationPrincipal Jwt jwt) {
         return service.getRecentAppointments(jwt);
