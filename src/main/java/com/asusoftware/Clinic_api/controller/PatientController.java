@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -50,6 +51,13 @@ public class PatientController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(patientService.getPatientsByCabinet(cabinetId, pageable));
     }
+
+    @PreAuthorize("hasAnyRole('DOCTOR', 'ASSISTANT', 'OWNER')")
+    @GetMapping("/stats/new-this-month")
+    public int getNewPatientsThisMonth(@AuthenticationPrincipal UserDetails userDetails) {
+        return patientService.getNewPatientsThisMonth(userDetails);
+    }
+
 
 
     @PutMapping("/{id}")
