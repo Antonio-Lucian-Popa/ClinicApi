@@ -65,7 +65,7 @@ public class MaterialService {
         return MaterialResponse.fromEntity(material);
     }
 
-    public MaterialResponse updateMaterial(UUID id, MaterialRequest request) {
+    public MaterialResponse updateMaterial(UUID id, MaterialRequest request, UserDetails userDetails) {
         Material material = materialRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Materialul nu a fost găsit"));
 
@@ -77,6 +77,18 @@ public class MaterialService {
         material.setCabinet(cabinet);
 
         materialRepository.save(material);
+
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("Utilizatorul nu a fost găsit"));
+
+        // Record the update action in the clinic history
+        clinicHistoryService.recordAction(
+                cabinet.getId(),
+                user.getId(), // Assuming no user is associated with material updates
+                "UPDATE_MATERIAL",
+                "Material updated: " + material.getName()
+        );
+
         return MaterialResponse.fromEntity(material);
     }
 

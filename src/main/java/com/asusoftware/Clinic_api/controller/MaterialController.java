@@ -39,9 +39,10 @@ public class MaterialController {
     @PutMapping("/{id}")
     public ResponseEntity<MaterialResponse> updateMaterial(
             @PathVariable UUID id,
-            @Valid @RequestBody MaterialRequest request
+            @Valid @RequestBody MaterialRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        return ResponseEntity.ok(materialService.updateMaterial(id, request));
+        return ResponseEntity.ok(materialService.updateMaterial(id, request, userDetails));
     }
 
     @DeleteMapping("/{id}")
