@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -34,4 +36,7 @@ public class PatientRequest {
     private String address;
 
     private String emergencyContact;
+
+    private List<String> medicalHistory = new ArrayList<>();
+    private List<String> allergies = new ArrayList<>();
 }

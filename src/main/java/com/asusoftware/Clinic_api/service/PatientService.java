@@ -32,6 +32,8 @@ public class PatientService {
     private final OwnerRepository ownerRepository;
     private final DoctorRepository doctorRepository;
     private final AssistantRepository assistantRepository;
+    private final PatientMedicalHistoryRepository patientMedicalHistoryRepository;
+    private final PatientAllergyRepository patientAllergyRepository;
 
     public PatientResponse createPatient(PatientRequest request, UserDetails userDetails) {
         User creator = userRepository.findByEmail(userDetails.getUsername())
@@ -58,6 +60,26 @@ public class PatientService {
 
         patientRepository.save(patient);
 
+        // === Salvare istoricul medical ===
+        for (String condition : request.getMedicalHistory()) {
+            patientMedicalHistoryRepository.save(
+                    PatientMedicalHistory.builder()
+                            .patient(patient)
+                            .medicalHistory(condition)
+                            .build()
+            );
+        }
+
+        // === Salvare alergii ===
+        for (String allergy : request.getAllergies()) {
+            patientAllergyRepository.save(
+                    PatientAllergy.builder()
+                            .patient(patient)
+                            .allergies(allergy)
+                            .build()
+            );
+        }
+
         clinicHistoryService.recordAction(
                 patient.getCabinet().getId(),
                 creator.getId(),
@@ -67,6 +89,7 @@ public class PatientService {
 
         return PatientResponse.fromEntity(patient);
     }
+
 
     public List<PatientResponse> getPatientsForCabinet(UUID cabinetId) {
         List<Patient> patients = patientRepository.findByCabinetId(cabinetId);
