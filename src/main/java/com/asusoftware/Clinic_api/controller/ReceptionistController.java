@@ -19,8 +19,8 @@ public class ReceptionistController {
     private final ReceptionistService receptionistService;
 
     @GetMapping
-    public ResponseEntity<List<ReceptionistResponse>> getAllReceptionists(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(receptionistService.getAll(userDetails));
+    public ResponseEntity<List<ReceptionistResponse>> getAllByCabinet(@RequestParam UUID cabinetId) {
+        return ResponseEntity.ok(receptionistService.getAllByCabinet(cabinetId));
     }
 
     @GetMapping("/{id}")
@@ -30,7 +30,7 @@ public class ReceptionistController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReceptionist(@PathVariable UUID id) {
-        receptionistService.delete(id);
+        receptionistService.deleteReceptionist(id);
         return ResponseEntity.noContent().build();
     }
 }
