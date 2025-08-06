@@ -7,7 +7,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class TimeOffRequest {
+public class TimeOffRequestDto {
 
     @NotBlank(message = "Rolul este obligatoriu")
     private String role;
