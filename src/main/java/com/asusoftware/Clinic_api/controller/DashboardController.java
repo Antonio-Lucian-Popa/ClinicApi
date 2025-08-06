@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,14 +27,14 @@ public class DashboardController {
 
     @PreAuthorize("hasAnyRole('OWNER', 'DOCTOR')")
     @GetMapping
-    public DashboardResponse getDashboard(@AuthenticationPrincipal Jwt jwt) {
-        return service.getDashboard(jwt);
+    public DashboardResponse getDashboard(@AuthenticationPrincipal UserDetails userDetails) {
+        return service.getDashboard(userDetails);
     }
 
     @PreAuthorize("hasAnyRole('OWNER', 'DOCTOR', 'ASSISTANT', 'RECEPTIONIST')")
     @GetMapping("/recent-appointments")
-    public List<AppointmentResponse> getRecentAppointments(@AuthenticationPrincipal Jwt jwt) {
-        return service.getRecentAppointments(jwt);
+    public List<AppointmentResponse> getRecentAppointments(@AuthenticationPrincipal UserDetails userDetails) {
+        return service.getRecentAppointments(userDetails);
     }
 }
 
