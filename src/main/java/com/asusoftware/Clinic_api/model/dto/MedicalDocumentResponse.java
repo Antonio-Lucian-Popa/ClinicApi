@@ -26,7 +26,7 @@ public class MedicalDocumentResponse {
                 .documentType(document.getDocumentType())
                 .fileUrl(document.getFileUrl())
                 .notes(document.getNotes())
-                .uploadedAt(document.getUploadedAt().toInstant())
+                .uploadedAt(Instant.from(document.getUploadedAt()))
                 .build();
     }
 }
