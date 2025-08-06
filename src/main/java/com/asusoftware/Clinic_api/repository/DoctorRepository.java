@@ -16,6 +16,6 @@ public interface DoctorRepository extends JpaRepository<Doctor, UUID> {
     List<Doctor> findByCabinetId(UUID cabinetId);
     boolean existsByUserIdAndCabinetId(UUID userId, UUID cabinetId); // în ReceptionistRepository & DoctorRepository
 
-    @Query("SELECT d FROM Doctor d WHERE d.cabinet.ownerId = :ownerId")
-    List<Doctor> findByCabinet_OwnerId(@Param("ownerId") UUID ownerId);
+    List<Doctor> findByCabinet_Owner_Id(UUID ownerId);
+
 }

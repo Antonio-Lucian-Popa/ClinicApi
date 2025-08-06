@@ -54,11 +54,11 @@ public class DashboardService {
             List<UUID> cabinetIds = cabinets.stream().map(Cabinet::getId).toList();
 
             int totalCabinets = cabinets.size();
-            int totalDoctors = doctorRepository.findByCabinet_OwnerId(owner.getId()).size();
+            int totalDoctors = doctorRepository.findByCabinet_Owner_Id(owner.getId()).size();
             int totalAssistants = assistantRepository.findAllByOwnerId(owner.getId()).size();
             int totalPatients = (int) patientRepository.countByCabinetIdIn(cabinetIds);
 
-            int todayAppointments = appointmentRepository.countTodayAppointmentsByCabinetIds(cabinetIds, startOfDay, endOfDay);
+            int todayAppointments = appointmentRepository.countByDoctor_Cabinet_IdInAndStartTimeBetween(cabinetIds, startOfDay, endOfDay);
             int pendingAppointments = appointmentRepository.countByDoctorCabinetIdInAndStatus(cabinetIds, "PENDING");
             int todayMaterialUsages = countTodayByCabinetIds(cabinetIds);
             int timeOffRequests = timeOffRepository.countByStatus("PENDING");
@@ -80,12 +80,12 @@ public class DashboardService {
             Doctor doctor = doctorRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new RuntimeException("Doctorul nu a fost găsit."));
 
-            int todayAppointments = appointmentRepository.countTodayAppointmentsByDoctor(doctor.getId(), startOfDay, endOfDay);
+            int todayAppointments = appointmentRepository.countByDoctor_IdAndStartTimeBetween(doctor.getId(), startOfDay, endOfDay);
             int pendingAppointments = appointmentRepository.countByDoctorIdAndStatus(doctor.getId(), "PENDING");
             LocalDateTime start = LocalDate.now().atStartOfDay();
             LocalDateTime end = start.plusDays(1);
 
-            int usagesToday = materialUsageRepository.countByDoctorIdAndUsedAtBetween(doctor.getId(), start, end);
+            int usagesToday = materialUsageRepository.countByDoctorIdAndUsageDateBetween(doctor.getId(), start, end);
 
             int timeOffRequests = timeOffRepository.findByUserId(user.getId()).size();
 
@@ -102,12 +102,12 @@ public class DashboardService {
             Assistant assistant = assistantRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new RuntimeException("Asistentul nu a fost găsit."));
 
-            int todayAppointments = appointmentRepository.countTodayAppointmentsByAssistant(assistant.getId(), startOfDay, endOfDay);
+            int todayAppointments = appointmentRepository.countByAssistant_IdAndStartTimeBetween(assistant.getId(), startOfDay, endOfDay);
             int pendingAppointments = appointmentRepository.countByAssistantIdAndStatus(assistant.getId(), "PENDING");
             LocalDateTime start = LocalDate.now().atStartOfDay();
             LocalDateTime end = start.plusDays(1);
 
-            int usagesToday = materialUsageRepository.countByAssistantIdAndUsedAtBetween(assistant.getId(), start, end);
+            int usagesToday = materialUsageRepository.countByAssistantIdAndUsageDateBetween(assistant.getId(), start, end);
 
             int timeOffRequests = timeOffRepository.findByUserId(user.getId()).size();
 
@@ -168,7 +168,7 @@ public class DashboardService {
     public int countTodayByCabinetIds(List<UUID> cabinetIds) {
         LocalDateTime start = LocalDate.now().atStartOfDay();
         LocalDateTime end = start.plusDays(1);
-        return materialUsageRepository.countByCabinetIdInAndUsedAtBetween(cabinetIds, start, end);
+        return materialUsageRepository.countByCabinetIdsConsideringDoctorAndAssistant(cabinetIds, start, end);
     }
 
 
