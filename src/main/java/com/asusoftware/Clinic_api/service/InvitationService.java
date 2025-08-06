@@ -1,6 +1,7 @@
 package com.asusoftware.Clinic_api.service;
 
 import com.asusoftware.Clinic_api.model.*;
+import com.asusoftware.Clinic_api.model.dto.InvitationResponse;
 import com.asusoftware.Clinic_api.model.dto.InviteRequest;
 import com.asusoftware.Clinic_api.repository.*;
 import com.asusoftware.Clinic_api.security.JwtService;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -180,5 +182,52 @@ public class InvitationService {
         invitation.setAcceptedAt(LocalDateTime.now());
         invitationRepository.save(invitation);
     }
+
+    public List<InvitationResponse> getInvitationsByInviter(UserDetails userDetails) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return invitationRepository.findByInvitedBy(user).stream()
+                .map(InvitationResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void cancelInvitation(UUID invitationId, UserDetails userDetails) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        Invitation invitation = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new RuntimeException("Invitație inexistentă"));
+
+        if (!invitation.getInvitedBy().getId().equals(user.getId())) {
+            throw new RuntimeException("Nu aveți dreptul să anulați această invitație.");
+        }
+
+        if (!"PENDING".equals(invitation.getStatus())) {
+            throw new RuntimeException("Doar invitațiile în așteptare pot fi anulate.");
+        }
+
+        invitation.setStatus("EXPIRED");
+        invitationRepository.save(invitation);
+    }
+
+    public Map<String, Object> verifyTokenDetails(String token) {
+        if (!jwtService.isValidToken(token)) {
+            throw new RuntimeException("Token invalid sau expirat.");
+        }
+
+        var claims = jwtService.extractAllClaims(token);
+
+        Map<String, Object> info = new HashMap<>();
+        info.put("email", claims.get("email", String.class));
+        info.put("role", claims.get("role", String.class));
+        info.put("cabinet_id", claims.get("cabinet_id", String.class));
+        info.put("doctor_id", claims.get("doctor_id", String.class));
+
+        return info;
+    }
+
+
 
 }

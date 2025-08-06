@@ -1,6 +1,7 @@
 package com.asusoftware.Clinic_api.repository;
 
 import com.asusoftware.Clinic_api.model.Invitation;
+import com.asusoftware.Clinic_api.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,4 +16,6 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
     Optional<Invitation> findByEmail(String email);
 
     boolean existsByEmailAndStatus(String email, String status);
+    List<Invitation> findByInvitedBy(User user);
+
 }
