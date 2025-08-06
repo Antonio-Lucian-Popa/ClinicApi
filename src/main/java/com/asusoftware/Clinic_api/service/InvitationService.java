@@ -101,50 +101,54 @@ public class InvitationService {
                 ? UUID.fromString(claims.get("doctor_id", String.class))
                 : null;
 
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Contul a fost deja creat.");
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // Creează user nou
+            Role roleEntity = roleRepository.findByName(role)
+                    .orElseThrow(() -> new RuntimeException("Rolul nu există în DB"));
+
+            user = User.builder()
+                    .email(email)
+                    .username(email)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .password(password) // deja codificat
+                    .enabled(true)
+                    .roles(Set.of(roleEntity))
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            userRepository.save(user);
         }
 
-        // 1. Creează user
-        Role roleEntity = roleRepository.findByName(role)
-                .orElseThrow(() -> new RuntimeException("Rolul nu există în DB"));
-
-        User user = User.builder()
-                .email(email)
-                .username(email)
-                .firstName(firstName)
-                .lastName(lastName)
-                .password(password) // deja codificat în controller!
-                .enabled(true)
-                .roles(Set.of(roleEntity))
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        userRepository.save(user);
-
-        // 2. Creează entitatea asociată rolului
+        // Caută cabinetul
         Cabinet cabinet = cabinetRepository.findById(cabinetId)
                 .orElseThrow(() -> new RuntimeException("Cabinetul nu există."));
 
+        // Creează entitatea asociată rolului doar dacă nu există deja
+        User finalUser = user;
         switch (role) {
             case "DOCTOR" -> {
-                doctorRepository.save(Doctor.builder()
-                        .user(user)
-                        .cabinet(cabinet)
-                        .active(true)
-                        .createdAt(LocalDateTime.now())
-                        .build());
+                if (!doctorRepository.existsByUserIdAndCabinetId(user.getId(), cabinet.getId())) {
+                    doctorRepository.save(Doctor.builder()
+                            .user(user)
+                            .cabinet(cabinet)
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build());
+                }
             }
 
             case "ASSISTANT" -> {
-                Assistant assistant = Assistant.builder()
-                        .user(user)
-                        .active(true)
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                assistantRepository.save(assistant);
+                Assistant assistant = assistantRepository.findByUserId(user.getId())
+                        .orElseGet(() -> assistantRepository.save(Assistant.builder()
+                                .user(finalUser)
+                                .active(true)
+                                .createdAt(LocalDateTime.now())
+                                .build()));
 
-                if (doctorId != null) {
+                // Dacă e invitat ca asistent al unui doctor
+                if (doctorId != null && !doctorAssistantRepository.existsByDoctorIdAndAssistantId(doctorId, assistant.getId())) {
                     Doctor doctor = doctorRepository.findById(doctorId)
                             .orElseThrow(() -> new RuntimeException("Doctorul nu există."));
 
@@ -156,22 +160,25 @@ public class InvitationService {
             }
 
             case "RECEPTIONIST" -> {
-                receptionistRepository.save(Receptionist.builder()
-                        .user(user)
-                        .cabinet(cabinet)
-                        .active(true)
-                        .createdAt(LocalDateTime.now())
-                        .build());
+                if (!receptionistRepository.existsByUserIdAndCabinetId(user.getId(), cabinet.getId())) {
+                    receptionistRepository.save(Receptionist.builder()
+                            .user(user)
+                            .cabinet(cabinet)
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build());
+                }
             }
 
             default -> throw new RuntimeException("Rol invalid: " + role);
         }
 
-        // 3. Marchează invitația ca ACCEPTED
+        // Marchează invitația ca ACCEPTED
         Invitation invitation = invitationRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invitație inexistentă"));
         invitation.setStatus("ACCEPTED");
         invitation.setAcceptedAt(LocalDateTime.now());
         invitationRepository.save(invitation);
     }
+
 }

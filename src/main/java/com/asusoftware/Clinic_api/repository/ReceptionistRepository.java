@@ -12,4 +12,8 @@ import java.util.UUID;
 public interface ReceptionistRepository extends JpaRepository<Receptionist, UUID> {
     Optional<Receptionist> findByUserId(UUID userId);
     List<Receptionist> findByCabinetId(UUID cabinetId);
+
+    boolean existsByUserId(UUID userId);
+    boolean existsByUserIdAndCabinetId(UUID userId, UUID cabinetId); // în ReceptionistRepository & DoctorRepository
+
 }
