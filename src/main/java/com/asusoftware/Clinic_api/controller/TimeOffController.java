@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/time-off")
+@RequestMapping("/time-off")
 @RequiredArgsConstructor
 public class TimeOffController {
 

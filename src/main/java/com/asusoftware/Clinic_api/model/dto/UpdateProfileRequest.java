@@ -11,4 +11,5 @@ public class UpdateProfileRequest {
     private String lastName;
     private String password; // noua parolă (opțional)
     private Set<String> roles; // opțional, doar pentru ADMIN
+    private String phoneNumber; // opțional, pentru a adăuga un număr de telefon
 }

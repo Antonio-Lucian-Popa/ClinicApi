@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/material-usages")
+@RequestMapping("/material-usages")
 @RequiredArgsConstructor
 public class MaterialUsageController {
 

@@ -23,6 +23,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -255,6 +256,21 @@ public class AuthService {
         }
 
         userRepository.save(user);
+
+        // Creează OWNER dacă e cazul
+        boolean isOwner = user.getRoles().stream()
+                .map(Role::getName)
+                .anyMatch("OWNER"::equals);
+
+        if (isOwner && !ownerRepository.existsByUserId(user.getId())) {
+            Owner owner = Owner.builder()
+                    .user(user)
+                    .phone(request.getPhoneNumber())  // Asigură-te că există în DTO
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            ownerRepository.save(owner);
+        }
+
     }
 
     public UserResponse getProfile(UserDetails userDetails) {
@@ -269,7 +285,7 @@ public class AuthService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
-                .createdAt(Instant.from(user.getCreatedAt()))
+                .createdAt(user.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant())
                 .enabled(user.isEnabled())
                 .build();
     }

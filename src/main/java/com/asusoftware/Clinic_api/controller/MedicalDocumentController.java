@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/medical-documents")
+@RequestMapping("/medical-documents")
 @RequiredArgsConstructor
 public class MedicalDocumentController {
 

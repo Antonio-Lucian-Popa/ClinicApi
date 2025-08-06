@@ -31,7 +31,7 @@ public class CabinetService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         Owner owner = ownerRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Owner profile not found"));
+                .orElseThrow(() -> new EntityNotFoundException("FOwner profile not found"));
 
         if (cabinetRepository.existsByOwnerAndName(owner, request.getName())) {
             throw new IllegalArgumentException("Ai deja un cabinet cu acest nume.");

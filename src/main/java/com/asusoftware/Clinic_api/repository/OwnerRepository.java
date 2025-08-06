@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface OwnerRepository extends JpaRepository<Owner, UUID> {
     Optional<Owner> findByUserId(UUID userId);
+
+    boolean existsByUserId(UUID id);
 }
