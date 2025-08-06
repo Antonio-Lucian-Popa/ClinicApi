@@ -74,7 +74,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .enabled(false)
                 .roles(Set.of(defaultRole))
-                .createdAt(LocalDateTime.from(new Date().toInstant()))
+                .createdAt(LocalDateTime.now())
                 .build();
 
         userRepository.save(user);
@@ -154,7 +154,7 @@ public class AuthService {
                     .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Parolă generată automat
                     .enabled(true)
                     .roles(Set.of(role))
-                    .createdAt(LocalDateTime.from(new Date().toInstant()))
+                    .createdAt(LocalDateTime.now())
                     .build();
 
             return userRepository.save(newUser);

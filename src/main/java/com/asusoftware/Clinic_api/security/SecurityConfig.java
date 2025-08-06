@@ -40,14 +40,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/login",
-                                "/register",
-                                "/confirm",
-                                "/refresh",
-                                "/oauth/google",
-                                "/forgot-password",
-                                "/reset-password",
-                                "/me"
+                                "/auth/login",
+                                "/auth/register",
+                                "/auth/confirm",
+                                "/auth/refresh",
+                                "/auth/oauth/google",
+                                "/auth/forgot-password",
+                                "/auth/reset-password",
+                                "/auth/me"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
