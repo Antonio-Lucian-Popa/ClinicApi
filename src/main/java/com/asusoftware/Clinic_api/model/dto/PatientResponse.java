@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -25,6 +26,9 @@ public class PatientResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private UUID createdBy;
+
+    private List<String> medicalHistory;
+    private List<String> allergies;
 
     public static PatientResponse fromEntity(Patient patient) {
         return PatientResponse.builder()

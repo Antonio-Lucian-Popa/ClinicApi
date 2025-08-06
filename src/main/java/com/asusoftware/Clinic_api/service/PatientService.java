@@ -180,5 +180,39 @@ public class PatientService {
         }
         patientRepository.deleteById(id);
     }
+
+    public PatientResponse mapToResponse(Patient patient) {
+        List<String> medicalHistory = patientMedicalHistoryRepository
+                .findByPatientId(patient.getId())
+                .stream()
+                .map(PatientMedicalHistory::getMedicalHistory) // sau .getName(), cum ai definit
+                .collect(Collectors.toList());
+
+        List<String> allergies = patientAllergyRepository
+                .findByPatientId(patient.getId())
+                .stream()
+                .map(PatientAllergy::getAllergies)
+                .collect(Collectors.toList());
+
+        return PatientResponse.builder()
+                .id(patient.getId())
+                .firstName(patient.getFirstName())
+                .lastName(patient.getLastName())
+                .email(patient.getEmail())
+                .phone(patient.getPhone())
+                .dateOfBirth(patient.getDateOfBirth())
+                .gender(patient.getGender())
+                .cnp(patient.getCnp())
+                .address(patient.getAddress())
+                .emergencyContact(patient.getEmergencyContact())
+                .cabinetId(patient.getCabinet().getId())
+                .createdAt(patient.getCreatedAt())
+                .updatedAt(patient.getUpdatedAt())
+                .createdBy(patient.getCreatedBy().getId())
+                .medicalHistory(medicalHistory)
+                .allergies(allergies)
+                .build();
+    }
+
 }
 
