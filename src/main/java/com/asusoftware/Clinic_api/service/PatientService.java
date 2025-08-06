@@ -28,6 +28,7 @@ public class PatientService {
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final CabinetRepository cabinetRepository;
+    private final ClinicHistoryService clinicHistoryService;
 
     public PatientResponse createPatient(PatientRequest request, UserDetails userDetails) {
         User creator = userRepository.findByEmail(userDetails.getUsername())
@@ -53,6 +54,14 @@ public class PatientService {
                 .build();
 
         patientRepository.save(patient);
+
+        clinicHistoryService.recordAction(
+                patient.getCabinet().getId(),
+                creator.getId(),
+                "CREARE PACIENT",
+                "A fost creat pacientul " + patient.getFirstName() + " " + patient.getLastName()
+        );
+
         return PatientResponse.fromEntity(patient);
     }
 

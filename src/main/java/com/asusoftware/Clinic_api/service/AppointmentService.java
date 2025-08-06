@@ -1,19 +1,14 @@
 package com.asusoftware.Clinic_api.service;
 
-import com.asusoftware.Clinic_api.model.Appointment;
-import com.asusoftware.Clinic_api.model.Assistant;
-import com.asusoftware.Clinic_api.model.Doctor;
-import com.asusoftware.Clinic_api.model.Patient;
+import com.asusoftware.Clinic_api.model.*;
 import com.asusoftware.Clinic_api.model.dto.AppointmentRequest;
 import com.asusoftware.Clinic_api.model.dto.AppointmentResponse;
-import com.asusoftware.Clinic_api.repository.AppointmentRepository;
-import com.asusoftware.Clinic_api.repository.AssistantRepository;
-import com.asusoftware.Clinic_api.repository.DoctorRepository;
-import com.asusoftware.Clinic_api.repository.PatientRepository;
+import com.asusoftware.Clinic_api.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,6 +24,8 @@ public class AppointmentService {
     private final DoctorRepository doctorRepository;
     private final AssistantRepository assistantRepository;
     private final PatientRepository patientRepository;
+    private final UserRepository userRepository;
+    private final ClinicHistoryService clinicHistoryService;
 
     public AppointmentResponse createAppointment(AppointmentRequest request) {
         Doctor doctor = doctorRepository.findById(request.getDoctorId())
@@ -59,7 +56,7 @@ public class AppointmentService {
         return AppointmentResponse.fromEntity(appointment);
     }
 
-    public AppointmentResponse updateAppointment(UUID id, AppointmentRequest request) {
+    public AppointmentResponse updateAppointment(UUID id, AppointmentRequest request, UserDetails userDetails) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Programarea nu a fost găsită"));
 
@@ -68,6 +65,9 @@ public class AppointmentService {
 
         Patient patient = patientRepository.findById(request.getPatientId())
                 .orElseThrow(() -> new EntityNotFoundException("Pacientul nu a fost găsit"));
+
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new EntityNotFoundException("Utilizatorul nu a fost găsit"));
 
         Assistant assistant = null;
         if (request.getAssistantId() != null) {
@@ -85,6 +85,14 @@ public class AppointmentService {
         appointment.setUpdatedAt(LocalDateTime.now());
 
         appointmentRepository.save(appointment);
+
+        clinicHistoryService.recordAction(
+                appointment.getDoctor().getCabinet().getId(),
+                user.getId(),
+                "MODIFICARE PROGRAMARE",
+                "Programarea pacientului " + patient.getFirstName() + " " + patient.getLastName() + " a fost actualizată."
+        );
+
         return AppointmentResponse.fromEntity(appointment);
     }
 
