@@ -129,12 +129,78 @@ public class PatientService {
         User updater = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+
         /*if (!patient.getCabinet().getOwner().getUser().getId().equals(updater.getId())) {
             throw new AccessDeniedException("Nu ai dreptul să modifici acest pacient.");
         }*/
         patient.setCreatedBy(updater);
 
         patientRepository.save(patient);
+
+        // --- Sync ISTORIC MEDICAL doar dacă a fost trimis în request ---
+        List<String> historyReq = normalizeList(request.getMedicalHistory());
+        if (historyReq != null) {
+            List<PatientMedicalHistory> existing = patientMedicalHistoryRepository.findByPatientId(patient.getId());
+
+            var existingValues = existing.stream()
+                    .map(PatientMedicalHistory::getMedicalHistory)
+                    .collect(Collectors.toSet());
+
+            var targetValues = new java.util.HashSet<>(historyReq);
+
+            // ce trebuie adăugat
+            List<PatientMedicalHistory> toAdd = targetValues.stream()
+                    .filter(v -> !existingValues.contains(v))
+                    .map(v -> PatientMedicalHistory.builder().patient(patient).medicalHistory(v).build())
+                    .toList();
+
+            // ce trebuie șters (din existing, nu tot)
+            List<PatientMedicalHistory> toDelete = existing.stream()
+                    .filter(e -> !targetValues.contains(e.getMedicalHistory()))
+                    .toList();
+
+            if (!toDelete.isEmpty()) {
+                patientMedicalHistoryRepository.deleteAllInBatch(toDelete);
+                // sau:
+                // patientMedicalHistoryRepository.deleteByPatientIdAndMedicalHistoryIn(patient.getId(),
+                //      toDelete.stream().map(PatientMedicalHistory::getMedicalHistory).toList());
+            }
+            if (!toAdd.isEmpty()) {
+                patientMedicalHistoryRepository.saveAll(toAdd);
+            }
+        }
+
+        // --- Sync ALERGII doar dacă au fost trimise în request ---
+        List<String> allergiesReq = normalizeList(request.getAllergies());
+        if (allergiesReq != null) {
+            List<PatientAllergy> existing = patientAllergyRepository.findByPatientId(patient.getId());
+
+            var existingValues = existing.stream()
+                    .map(PatientAllergy::getAllergies)
+                    .collect(Collectors.toSet());
+
+            var targetValues = new java.util.HashSet<>(allergiesReq);
+
+            List<PatientAllergy> toAdd = targetValues.stream()
+                    .filter(v -> !existingValues.contains(v))
+                    .map(v -> PatientAllergy.builder().patient(patient).allergies(v).build())
+                    .toList();
+
+            List<PatientAllergy> toDelete = existing.stream()
+                    .filter(e -> !targetValues.contains(e.getAllergies()))
+                    .toList();
+
+            if (!toDelete.isEmpty()) {
+                patientAllergyRepository.deleteAllInBatch(toDelete);
+                // sau varianta cu query:
+                // patientAllergyRepository.deleteByPatientIdAndAllergiesIn(patient.getId(),
+                //      toDelete.stream().map(PatientAllergy::getAllergies).toList());
+            }
+            if (!toAdd.isEmpty()) {
+                patientAllergyRepository.saveAll(toAdd);
+            }
+        }
+
         return mapToResponse(patient);
     }
 
@@ -212,6 +278,15 @@ public class PatientService {
                 .medicalHistory(medicalHistory)
                 .allergies(allergies)
                 .build();
+    }
+
+    private static List<String> normalizeList(List<String> input) {
+        if (input == null) return null; // semnal: nu modifica
+        return input.stream()
+                .map(s -> s == null ? "" : s.trim())
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
     }
 
 }
