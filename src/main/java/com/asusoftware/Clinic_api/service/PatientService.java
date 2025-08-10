@@ -98,7 +98,7 @@ public class PatientService {
 
     public Page<PatientResponse> getAllPatients(Pageable pageable) {
         return patientRepository.findAll(pageable)
-                .map(PatientResponse::fromEntity);
+                .map(this::mapToResponse);
     }
 
     public Page<PatientResponse> getPatientsByCabinet(UUID cabinetId, Pageable pageable) {
