@@ -93,7 +93,7 @@ public class PatientService {
 
     public List<PatientResponse> getPatientsForCabinet(UUID cabinetId) {
         List<Patient> patients = patientRepository.findByCabinetId(cabinetId);
-        return patients.stream().map(PatientResponse::fromEntity).collect(Collectors.toList());
+        return patients.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     public Page<PatientResponse> getAllPatients(Pageable pageable) {
@@ -103,13 +103,13 @@ public class PatientService {
 
     public Page<PatientResponse> getPatientsByCabinet(UUID cabinetId, Pageable pageable) {
         return patientRepository.findByCabinetId(cabinetId, pageable)
-                .map(PatientResponse::fromEntity);
+                .map(this::mapToResponse);
     }
 
     public PatientResponse getPatientById(UUID id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pacientul nu a fost găsit"));
-        return PatientResponse.fromEntity(patient);
+        return mapToResponse(patient);
     }
 
     public PatientResponse updatePatient(UUID id, PatientRequest request, UserDetails userDetails) {
@@ -135,7 +135,7 @@ public class PatientService {
         patient.setCreatedBy(updater);
 
         patientRepository.save(patient);
-        return PatientResponse.fromEntity(patient);
+        return mapToResponse(patient);
     }
 
     public int getNewPatientsThisMonth(UserDetails userDetails) {
