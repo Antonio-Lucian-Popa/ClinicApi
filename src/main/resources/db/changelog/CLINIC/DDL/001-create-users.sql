@@ -57,12 +57,13 @@ CREATE TABLE cabinets (
 -- === DOCTORS ===
 CREATE TABLE doctors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     cabinet_id UUID NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
     specialization VARCHAR(100),
     room_label VARCHAR(50),
     active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_doctors_user_cabinet UNIQUE (user_id, cabinet_id)
 );
 
 -- === ASSISTANTS ===
@@ -204,3 +205,7 @@ CREATE TABLE clinic_history (
     details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE INDEX IF NOT EXISTS idx_doctors_user_id ON doctors(user_id);
+CREATE INDEX IF NOT EXISTS idx_doctors_cabinet_id ON doctors(cabinet_id);

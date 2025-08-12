@@ -1,6 +1,7 @@
 package com.asusoftware.Clinic_api.repository;
 
 import com.asusoftware.Clinic_api.model.Assistant;
+import com.asusoftware.Clinic_api.model.Cabinet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,5 +23,15 @@ public interface AssistantRepository extends JpaRepository<Assistant, UUID> {
     WHERE c.owner.id = :ownerId
 """)
     List<Assistant> findAllByOwnerId(@Param("ownerId") UUID ownerId);
+
+
+    @Query("""
+    select distinct d.cabinet
+    from DoctorAssistant da
+      join da.doctor d
+      join da.assistant a
+    where a.user.id = :userId
+  """)
+    List<Cabinet> findCabinetsForAssistantUser(@Param("userId") UUID userId);
 
 }

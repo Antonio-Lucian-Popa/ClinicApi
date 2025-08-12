@@ -6,10 +6,7 @@ import com.asusoftware.Clinic_api.model.Owner;
 import com.asusoftware.Clinic_api.model.User;
 import com.asusoftware.Clinic_api.model.dto.CabinetRequest;
 import com.asusoftware.Clinic_api.model.dto.CabinetResponse;
-import com.asusoftware.Clinic_api.repository.CabinetRepository;
-import com.asusoftware.Clinic_api.repository.DoctorRepository;
-import com.asusoftware.Clinic_api.repository.OwnerRepository;
-import com.asusoftware.Clinic_api.repository.UserRepository;
+import com.asusoftware.Clinic_api.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +25,7 @@ public class CabinetService {
     private final OwnerRepository ownerRepository;
     private final UserRepository userRepository;
     private final DoctorRepository doctorRepository;
+    private final AssistantRepository assistantRepository;
 
     public CabinetResponse createCabinet(CabinetRequest request, UserDetails userDetails) {
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -57,22 +55,35 @@ public class CabinetService {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        if(user.getRoles().stream().noneMatch(role -> role.getName().equals("OWNER"))) {
-            Doctor doctor = doctorRepository.findByUserId(user.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Doctor profile not found"));
-            return doctor.getCabinet()
-                    .stream()
-                    .map(this::mapToResponse)
-                    .collect(Collectors.toList());
+        // OWNER → cabinetele lui
+        if (user.getRoles().stream().anyMatch(role -> "OWNER".equals(role.getName()))) {
+            Owner owner = ownerRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Owner profile not found"));
+            return cabinetRepository.findByOwnerId(owner.getId())
+                    .stream().map(this::mapToResponse).toList();
         }
-        Owner owner = ownerRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Owner profile not found"));
 
-        return cabinetRepository.findByOwnerId(owner.getId())
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        // DOCTOR → cabinetele din doctors (posibil mai multe)
+        if (user.getRoles().stream().anyMatch(role -> "DOCTOR".equals(role.getName()))) {
+            return doctorRepository.findCabinetsForDoctorUser(user.getId())
+                    .stream().map(this::mapToResponse).toList();
+        }
+
+        // ASSISTANT → cabinetele prin doctor_assistant
+        if (user.getRoles().stream().anyMatch(role -> "ASSISTANT".equals(role.getName()))) {
+            return assistantRepository.findCabinetsForAssistantUser(user.getId())
+                    .stream().map(this::mapToResponse).toList();
+        }
+
+        // RECEPTIONIST (în schema ta e legat direct de un cabinet)
+        if (user.getRoles().stream().anyMatch(role -> "RECEPTIONIST".equals(role.getName()))) {
+            return cabinetRepository.findAllByReceptionistUserId(user.getId())
+                    .stream().map(this::mapToResponse).toList();
+        }
+
+        return List.of();
     }
+
 
     public CabinetResponse getCabinetById(UUID id, UserDetails userDetails) {
         Cabinet cabinet = cabinetRepository.findById(id)

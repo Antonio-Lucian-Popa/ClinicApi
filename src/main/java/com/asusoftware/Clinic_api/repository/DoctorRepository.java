@@ -1,5 +1,6 @@
 package com.asusoftware.Clinic_api.repository;
 
+import com.asusoftware.Clinic_api.model.Cabinet;
 import com.asusoftware.Clinic_api.model.Doctor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, UUID> {
     boolean existsByUserIdAndCabinetId(UUID userId, UUID cabinetId); // în ReceptionistRepository & DoctorRepository
 
     List<Doctor> findByCabinet_Owner_Id(UUID ownerId);
+
+    @Query("select d.cabinet from Doctor d where d.user.id = :userId")
+    List<Cabinet> findCabinetsForDoctorUser(@Param("userId") UUID userId);
 }
