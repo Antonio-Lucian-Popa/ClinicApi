@@ -1,11 +1,13 @@
 package com.asusoftware.Clinic_api.service;
 
 import com.asusoftware.Clinic_api.model.Cabinet;
+import com.asusoftware.Clinic_api.model.Doctor;
 import com.asusoftware.Clinic_api.model.Owner;
 import com.asusoftware.Clinic_api.model.User;
 import com.asusoftware.Clinic_api.model.dto.CabinetRequest;
 import com.asusoftware.Clinic_api.model.dto.CabinetResponse;
 import com.asusoftware.Clinic_api.repository.CabinetRepository;
+import com.asusoftware.Clinic_api.repository.DoctorRepository;
 import com.asusoftware.Clinic_api.repository.OwnerRepository;
 import com.asusoftware.Clinic_api.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,6 +27,7 @@ public class CabinetService {
     private final CabinetRepository cabinetRepository;
     private final OwnerRepository ownerRepository;
     private final UserRepository userRepository;
+    private final DoctorRepository doctorRepository;
 
     public CabinetResponse createCabinet(CabinetRequest request, UserDetails userDetails) {
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -54,6 +57,14 @@ public class CabinetService {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        if(user.getRoles().stream().noneMatch(role -> role.getName().equals("OWNER"))) {
+            Doctor doctor = doctorRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Doctor profile not found"));
+            return doctor.getCabinet()
+                    .stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+        }
         Owner owner = ownerRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Owner profile not found"));
 
