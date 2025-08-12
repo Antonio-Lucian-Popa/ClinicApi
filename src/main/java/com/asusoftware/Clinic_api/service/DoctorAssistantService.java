@@ -4,6 +4,7 @@ import com.asusoftware.Clinic_api.model.Assistant;
 import com.asusoftware.Clinic_api.model.Doctor;
 import com.asusoftware.Clinic_api.model.DoctorAssistant;
 import com.asusoftware.Clinic_api.model.dto.AssistantResponse;
+import com.asusoftware.Clinic_api.model.dto.DoctorDto;
 import com.asusoftware.Clinic_api.repository.AssistantRepository;
 import com.asusoftware.Clinic_api.repository.DoctorAssistantRepository;
 import com.asusoftware.Clinic_api.repository.DoctorRepository;
@@ -54,6 +55,12 @@ public class DoctorAssistantService {
         return doctorAssistantRepository.findByDoctorId(doctorId).stream()
                 .map(DoctorAssistant::getAssistant)
                 .map(AssistantResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<DoctorDto> getDoctorsByClinic(UUID clinicId) {
+        return doctorRepository.findByCabinetId(clinicId).stream()
+                .map(DoctorDto::fromEntity)
                 .collect(Collectors.toList());
     }
 }

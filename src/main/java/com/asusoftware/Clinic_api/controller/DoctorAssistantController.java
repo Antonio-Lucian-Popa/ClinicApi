@@ -1,6 +1,7 @@
 package com.asusoftware.Clinic_api.controller;
 
 import com.asusoftware.Clinic_api.model.dto.AssistantResponse;
+import com.asusoftware.Clinic_api.model.dto.DoctorDto;
 import com.asusoftware.Clinic_api.service.DoctorAssistantService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,14 @@ public class DoctorAssistantController {
     ) {
         List<AssistantResponse> assistants = doctorAssistantService.getAssistantsForDoctor(doctorId);
         return ResponseEntity.ok(assistants);
+    }
+
+    @GetMapping("/doctor/by-clinic/{clinicId}")
+    public ResponseEntity<List<DoctorDto>> getDoctorsByClinic(
+            @PathVariable UUID clinicId
+    ) {
+        List<DoctorDto> doctors = doctorAssistantService.getDoctorsByClinic(clinicId);
+        return ResponseEntity.ok(doctors);
     }
 
     // ✅ Elimină un asistent din lista unui doctor
