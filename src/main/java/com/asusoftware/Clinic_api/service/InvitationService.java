@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,8 @@ public class InvitationService {
     private final ReceptionistRepository receptionistRepository;
     private final EmailService emailService;
     private final JwtService jwtService;
+
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -98,7 +101,7 @@ public class InvitationService {
         var claims = jwtService.extractAllClaims(token);
         String email = claims.get("email", String.class);
         String role = claims.get("role", String.class);
-        UUID cabinetId = UUID.fromString(claims.get("cabinet_id", String.class));
+        UUID cabinetId = UUID.fromString(claims.get("cabinetId", String.class));
         UUID doctorId = claims.get("doctor_id") != null
                 ? UUID.fromString(claims.get("doctor_id", String.class))
                 : null;
@@ -114,7 +117,7 @@ public class InvitationService {
                     .username(email)
                     .firstName(firstName)
                     .lastName(lastName)
-                    .password(password) // deja codificat
+                    .password(passwordEncoder.encode(password)) // deja codificat
                     .enabled(true)
                     .roles(Set.of(roleEntity))
                     .createdAt(LocalDateTime.now())
