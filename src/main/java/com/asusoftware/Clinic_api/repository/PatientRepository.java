@@ -17,6 +17,24 @@ public interface PatientRepository extends JpaRepository<Patient, UUID> {
     List<Patient> findByCabinetId(UUID cabinetId);
     Page<Patient> findByCabinetId(UUID cabinetId, Pageable pageable);
 
+    @Query("""
+        SELECT p FROM Patient p
+        WHERE p.cabinet.id = :cabinetId
+          AND (
+               :q = ''
+            OR LOWER(p.firstName) LIKE CONCAT('%', LOWER(:q), '%')
+            OR LOWER(p.lastName)  LIKE CONCAT('%', LOWER(:q), '%')
+            OR LOWER(p.email)     LIKE CONCAT('%', LOWER(:q), '%')
+            OR LOWER(p.phone)     LIKE CONCAT('%', LOWER(:q), '%')
+            OR LOWER(p.cnp)       LIKE CONCAT('%', LOWER(:q), '%')
+          )
+        """)
+    Page<Patient> searchByCabinetAndQuery(@Param("cabinetId") UUID cabinetId,
+                                          @Param("q") String q,
+                                          Pageable pageable);
+
+
+
     long countByCabinetIdIn(List<UUID> cabinetIds);
 
     // pentru OWNER

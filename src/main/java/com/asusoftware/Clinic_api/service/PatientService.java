@@ -101,10 +101,13 @@ public class PatientService {
                 .map(this::mapToResponse);
     }
 
-    public Page<PatientResponse> getPatientsByCabinet(UUID cabinetId, Pageable pageable) {
-        return patientRepository.findByCabinetId(cabinetId, pageable)
-                .map(this::mapToResponse);
+    public Page<PatientResponse> getPatientsByCabinet(UUID cabinetId, String q, Pageable pageable) {
+        final String query = (q == null) ? "" : q.trim();
+        Page<Patient> page = patientRepository.searchByCabinetAndQuery(cabinetId, query, pageable);
+        return page.map(this::mapToResponse);
     }
+
+
 
     public PatientResponse getPatientById(UUID id) {
         Patient patient = patientRepository.findById(id)

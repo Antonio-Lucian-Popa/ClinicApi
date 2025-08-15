@@ -48,9 +48,14 @@ public class PatientController {
     @GetMapping("/by-cabinet/{cabinetId}")
     public ResponseEntity<Page<PatientResponse>> getByCabinet(
             @PathVariable UUID cabinetId,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(patientService.getPatientsByCabinet(cabinetId, pageable));
+            @RequestParam(value = "q", required = false) String q,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(patientService.getPatientsByCabinet(cabinetId, q, pageable));
     }
+
+
 
     @PreAuthorize("hasAnyRole('DOCTOR', 'ASSISTANT', 'OWNER')")
     @GetMapping("/stats/new-this-month")
